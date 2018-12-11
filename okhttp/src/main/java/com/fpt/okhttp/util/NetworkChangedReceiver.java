@@ -1,6 +1,5 @@
 package com.fpt.okhttp.util;
 
-import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -16,13 +15,10 @@ import com.blankj.utilcode.util.NetworkUtils;
  *   @author  : fpt
  *   e-mail  : fengfei0205@sina.com
  *   time    : 2018/07/26 18:55
- *   desc    :
- *              <p>Must hold {@code <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />}</p>
- *              <p>Must hold {@code <uses-permission android:name="android.permission.INTERNET" />}</p>
+ *   desc    :使用前一定要初始化工具类Utils.init(this);
  *   version : 1.0
  * </pre>
  */
-@SuppressLint("MissingPermission")
 public class NetworkChangedReceiver extends BroadcastReceiver {
     private Context mContext;
     private OnNetworkStatusListener listener;

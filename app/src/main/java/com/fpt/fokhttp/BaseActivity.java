@@ -31,7 +31,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                 setContentView(layoutResID);
                 //绑定到butterknife
                 unbinder = ButterKnife.bind(this);
-                //如果要使用 Eventbus 请将此方法返回 true
                 //初始化工具框架
                 Utils.init(this);
                 //初始化eventbus

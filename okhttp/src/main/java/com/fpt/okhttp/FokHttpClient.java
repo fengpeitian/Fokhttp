@@ -2,28 +2,40 @@ package com.fpt.okhttp;
 
 import com.fpt.okhttp.callback.DownloadCallback;
 import com.fpt.okhttp.callback.JsonCallback;
+import com.fpt.okhttp.exception.OkHttpException;
 import com.fpt.okhttp.util.HttpsUtils;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509TrustManager;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.WebSocketListener;
 
 /**
- * Created by FPT.
  * 构建一个OkHttpClient和请求参数的配置，https支持
+ * @author fengpeitian
  */
 public class FokHttpClient {
-    private static final int TIME_CONNECT_OUT = 5; //超时参数
-    private static final int TIME_OUT = 10; //超时参数
+    /**
+     * 超时参数
+     */
+    private static final int TIME_CONNECT_OUT = 5;
+    /**
+     * 超时参数
+     */
+    private static final int TIME_OUT = 10;
     private static OkHttpClient mOkHttpClient;
 
     //配置OkHttpClient参数
@@ -40,7 +52,7 @@ public class FokHttpClient {
         //添加https支持
         okHttpClientBuilder.hostnameVerifier(new HostnameVerifier() {
             @Override
-            public boolean verify(String s, SSLSession sslSession) {
+            public boolean verify(String hostname, SSLSession session) {
                 return true;
             }
         });
@@ -50,7 +62,6 @@ public class FokHttpClient {
         // okHttpClientBuilder.addInterceptor(new NetInterceptor());
         //okHttpClientBuilder.addInterceptor();
 
-        //生成client对象
         mOkHttpClient = okHttpClientBuilder.build();
     }
 
@@ -84,6 +95,46 @@ public class FokHttpClient {
         call.enqueue(callback);
 
         return call;
+    }
+
+    /**
+     * 发送具体的http/https的请求
+     * @param request
+     * @return rxJava可用的Observable对象
+     */
+    public static Observable<String> sendRequest(Request request) {
+
+        final Call call = mOkHttpClient.newCall(request);
+        ObservableOnSubscribe<String> source = new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final ObservableEmitter<String> e) throws Exception {
+                call.enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException ex) {
+                        e.onError(ex);
+                        if (!call.isCanceled()) {
+                            call.cancel();
+                        }
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if (response.isSuccessful()){
+                            String json = response.body().string();
+                            e.onNext(json);
+                            e.onComplete();
+                        }else {
+                            e.onError(new OkHttpException(-1, "发生未知错误!"));
+                        }
+                        if (!call.isCanceled()) {
+                            call.cancel();
+                        }
+                    }
+                });
+            }
+        };
+
+        return Observable.create(source);
     }
 
     /**
@@ -121,7 +172,7 @@ public class FokHttpClient {
     }
 
     /**
-     * 设置一个websock长连接
+     * 设置一个WebSocket长连接
      * @param url
      * @param listener
      */
@@ -133,7 +184,7 @@ public class FokHttpClient {
     }
 
     /**
-     * websocket的关闭的参数
+     * WebSocket的关闭的参数
      * https://tools.ietf.org/html/rfc6455#section-7.4
      */
     public static final int normal_closure = 1000;
