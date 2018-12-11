@@ -24,7 +24,7 @@ import okhttp3.Request;
 public class MainActivity extends BaseActivity {
     @BindView(R.id.tv_title)
     TextView tv_title;
-    private String url = "https://service.51bjhzy.com/api/Configuration/getConfiguration";
+    private String url = "https://www.baidu.com";
 
     private NetworkStatusEvent event = new NetworkStatusEvent();
 
