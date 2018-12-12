@@ -5,6 +5,8 @@ import com.fpt.okhttp.callback.JsonCallback;
 import com.fpt.okhttp.exception.OkHttpException;
 import com.fpt.okhttp.util.HttpsUtils;
 
+import org.reactivestreams.Subscriber;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +14,10 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509TrustManager;
 
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableEmitter;
+import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -111,7 +117,9 @@ public class FokHttpClient {
                 call.enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, IOException ex) {
-                        e.onError(ex);
+                        if (!e.isDisposed()) {
+                            e.onError(ex);
+                        }
                         if (!call.isCanceled()) {
                             call.cancel();
                         }
@@ -119,15 +127,16 @@ public class FokHttpClient {
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
-                        if (response.isSuccessful()){
+                        if (response.isSuccessful() && !e.isDisposed()){
                             String json = response.body().string();
                             e.onNext(json);
-                            e.onComplete();
                         }else {
-                            e.onError(new OkHttpException(-1, "发生未知错误!"));
-                        }
-                        if (!call.isCanceled()) {
-                            call.cancel();
+                            if (!e.isDisposed()) {
+                                e.onError(new OkHttpException(-1, "发生未知错误!"));
+                            }
+                            if (!call.isCanceled()) {
+                                call.cancel();
+                            }
                         }
                     }
                 });
@@ -136,6 +145,51 @@ public class FokHttpClient {
 
         return Observable.create(source);
     }
+
+    /**
+     * 发送具体的http/https的请求
+     * @param request
+     * @param strategy 背压策略 记得一定要在Subscriber中调用request()方法
+     * @return rxJava可用的Flowable对象
+     */
+    public static Flowable<String> sendRequest(Request request,BackpressureStrategy strategy) {
+
+        final Call call = mOkHttpClient.newCall(request);
+        Flowable<String> flowable = Flowable.create(new FlowableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final FlowableEmitter<String> e) throws Exception {
+                call.enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException ex) {
+                        if (!e.isCancelled()) {
+                            e.onError(ex);
+                        }
+                        if (!call.isCanceled()) {
+                            call.cancel();
+                        }
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if (response.isSuccessful() && !e.isCancelled()){
+                            String json = response.body().string();
+                            e.onNext(json);
+                        }else {
+                            if (!e.isCancelled()) {
+                                e.onError(new OkHttpException(-1, "发生未知错误!"));
+                            }
+                            if (!call.isCanceled()) {
+                                call.cancel();
+                            }
+                        }
+                    }
+                });
+            }
+        }, strategy);
+
+        return flowable;
+    }
+
 
     /**
      * 下载
