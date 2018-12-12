@@ -32,7 +32,7 @@ public class Request {
      * @param url    联网地址
      * @param params 参数
      */
-    public static okhttp3.Request createPostJsonRequest(String url, @NonNull Map<String, Object> params) {
+    public static <T extends Object> okhttp3.Request createPostJsonRequest(String url, @NonNull Map<String, T> params) {
         //MediaType  设置Content-Type 标头中包含的媒体类型值
         RequestBody requestBody = FormBody.create(MediaType.parse("application/json; charset=utf-8")
                 , new Gson().toJson(params));
@@ -88,12 +88,12 @@ public class Request {
      * @param url    联网地址
      * @param params 参数
      */
-    public static okhttp3.Request createPostRequest(String url, Map<String, Object> params) {
+    public static <T extends Object> okhttp3.Request createPostRequest(String url, Map<String,T> params) {
 
         FormBody.Builder mFormBodyBuilder = new FormBody.Builder();
 
         if (params != null) {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
+            for (Map.Entry<String,T> entry : params.entrySet()) {
                 //将请求参数遍历添加到请求构建类中
                 mFormBodyBuilder.add(entry.getKey(), entry.getValue().toString());
             }

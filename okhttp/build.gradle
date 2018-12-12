@@ -5,7 +5,7 @@ publish{
     userOrg = 'fengpt'
     groupId = 'com.fpt.okhttp'
     artifactId = 'Fokhttp'
-    publishVersion = '1.0.2'
+    publishVersion = '1.0.3'
     desc = 'fix bug for support rxjava and add backpressure'
     website = 'https://github.com/fengpeitian/Fokhttp'
 }
@@ -17,7 +17,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 26
         versionCode 3
-        versionName "1.0.2"
+        versionName "1.0.3"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
